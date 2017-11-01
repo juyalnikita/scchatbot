@@ -5,6 +5,7 @@ import socket
 from threading import Thread
 import random
 
+#check message
 def check_msg(msg):
 	print('Checking')
 	if (msg.find('JOIN_CHATROOM'.encode('utf-8'))+1):
@@ -45,10 +46,10 @@ def join(conn_msg,csock):
 	csock.send(response)
 	return groupname,clientname
 
-def discon():
+def discon():    #msg_DISCONNECT
 	clThread.exit()
 
-def leave(conn_msg,csock):
+def leave(conn_msg,csock):      #msg_LEAVE
 	grp_start = conn_msg.find('LEAVE_CHATROOM:'.encode('utf-8')) + 15
 	grp_end = conn_msg.find('\n'.encode('utf-8'), grp_start) - 1
 
@@ -71,7 +72,7 @@ def leave(conn_msg,csock):
 	csock.send(response)
 	
 
-def chat(conn_msg,csock):
+def chat(conn_msg,csock):       #msg_CHAT
 	chat_msg_start = conn_msg.find('MESSAGE:'.encode('utf-8')) + 9
 	chat_msg_end = conn_msg.find('\n\n'.encode('utf-8'),chat_msg_start) - 1	
 
@@ -130,8 +131,8 @@ server.bind((host,port))
 print(host)
 thread_count = [] 
 
-g1_clients = []
-g2_clients = []
+g1_clients = []         #group1
+g2_clients = []         #group2
 
 
 while True:

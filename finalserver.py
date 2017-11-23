@@ -126,7 +126,7 @@ class client_threads(Thread):
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host = socket.gethostname()
-port = 50000
+port = int(50000)
 server.bind((host,port))
 print(host)
 thread_count = [] 
@@ -145,6 +145,3 @@ while True:
 	clThread = client_threads(ip,port,csock)
 	clThread.start()
 	thread_count.append(clThread)
-	print("Threads :")
-	print(thread_count)
-	print(g1_clients)

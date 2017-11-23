@@ -59,7 +59,12 @@ host = input('Enter Hostname')
  
 port = input('Port') 
 #connection to hostname on the port. 
-s.connect((host, int(port)))                                
+s.connect((host, int(port))) 
+
+sent_test="Hello text \n".encode('utf-8')
+s.send(sent_test)
+print(s.recv(1024))
+
 Cname = input('Give Client Name')
 join()
 jID=0

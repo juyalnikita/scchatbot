@@ -2,8 +2,10 @@
 
 
 import socket
-from threading import Thread
+from threading import Thread,Lock
 import random
+
+Lock_thread=Lock()
 
 #check message
 def check_msg(msg):
@@ -20,9 +22,9 @@ def check_msg(msg):
 		return(5)
 
 def join(conn_msg,csock):
-	print('Joiner')
-	gname = conn_msg.find(':'.encode('utf-8'))+2
-	gname_end = conn_msg.find('\n'.encode('utf-8'))-1
+	Lock_thread.acquire()
+	gname = conn_msg.find('Join chatroom:'.encode('utf-8'))+14
+	gname_end = conn_msg.find('\n'.encode('utf-8'))
 	groupname = conn_msg[gname:gname_end]
 
 	cname = conn_msg.find('CLIENT_NAME'.encode('utf-8'))+13
@@ -46,33 +48,34 @@ def join(conn_msg,csock):
 	csock.send(response)
 	return groupname,clientname
 
-def discon():    #msg_DISCONNECT
-	clThread.exit()
-
-def leave(conn_msg,csock):      #msg_LEAVE
-	grp_start = conn_msg.find('LEAVE_CHATROOM:'.encode('utf-8')) + 15
-	grp_end = conn_msg.find('\n'.encode('utf-8'), grp_start) - 1
-
+def leave(conn_msg,csock):   
+	Lock_thread.acquire()
+	grp_start = conn_msg.find('LEAVE_CHATROOM:'.encode('utf-8')) + 16
+	grp_end = conn_msg.find('\n'.encode('utf-8'), grp_start)
 	group_name = conn_msg[grp_start:grp_end]
 
 	response = "LEFT_CHATROOM".encode('utf-8') + groupname + "\n".encode('utf-8')
 	response += "JOIN_ID".encode('utf-8') + str(clThread.uid).encode('utf-8')
 
-	grpmessage = "CLIENT_NAME:".encode('utf-8') + (self.clientname).encode('utf-8') + "\n".encode('utf-8')
-	grpmessage += "CLIENT_ID:".encode('utf-8') + str(self.uid).encode('utf-8') +"\n".encode('utf-8')
+	grpmessage = "CLIENT_NAME:".encode('utf-8') + (c1Thread.clientname).encode('utf-8') + "\n".encode('utf-8')
+	grpmessage += "CLIENT_ID:".encode('utf-8') + str(c1Thread.uid).encode('utf-8') +"\n".encode('utf-8')
 	grpmessage += "LEFT GROUP".encode('utf-8')
-	if group_name == g1:
-		g1_clients.remove(self.clientname)
+	print(group_name)
+	if (group_name.decode('utf-8')) == g1:
+		i= g1_clients.index(c1Thread.socket)
+		del g1_clients[i]
 		for x in g1_clients:
-			(g1_clients[x].socket).send(chat_text)
-	elif group_name == g2:
-		g2_clients.remove(self.clientname)
+			g1_clients[x].send(chat_text)
+	elif group_name.decode('utf-8')) == g2:
+		i=g2_clients.index(c1Thread.text)
+		del g2_clients[i]
 		for x in g2_clients:
-			(g2_clients[x].socket).send(chat_text)
+			(g2_clients[x].send(chat_text)
 	csock.send(response)
-	
+	Lock_thread.release()
 
 def chat(conn_msg,csock):       #msg_CHAT
+	Lock_thread.acquire()		 
 	chat_msg_start = conn_msg.find('MESSAGE:'.encode('utf-8')) + 9
 	chat_msg_end = conn_msg.find('\n\n'.encode('utf-8'),chat_msg_start) - 1	
 
@@ -93,7 +96,20 @@ def chat(conn_msg,csock):       #msg_CHAT
 	elif group_name == g2:
 		for x in g2_clients:
 			(g2_clients[x].socket).send(chat_text)
+	Lock_thread.release()
+
+def response(msg,socket)
+	msgstart=msg.find('HELLO:'.encode('utf-8'))+5
+	msgend=msg.find('\n'.encode('utf-8'),msgstart)
+	chatmsg=msg[msgstart:msgend]
+			 
+	response = "HELLO: ".encode('utf-8') + chat_msg + "\n".encode('utf-8')
+	response += "IP: ".encode('utf-8') + str(clThread.ip).encode('utf-8') + "\n".encode('utf-8')
+	response += "PORT: ".encode('utf-8') + str(clThread.port).encode('utf-8') + "\n".encode('utf-8')
+	response += "StudentID: ".encode('utf-8') + "17307932".encode('utf-8') + "\n".encode('utf-8')
 	
+	socket.send(response)
+			 
 class client_threads(Thread):
 
 	def __init__(self,ip,port,socket):
@@ -105,23 +121,27 @@ class client_threads(Thread):
 		self.uid = random.randint(1000,2000)
 		self.roomname = ''
 		self.clientname = ''
+		self.roomID = ''
 
 	def run(self):
 		while True:
 			conn_msg = csock.recv(1024)
-			cflag = check_msg(conn_msg)
-			print('Connected')
+			print(conn_msg)
+			cflag=check_msg(conn_msg)
+			print(conn_msg)
+			cflag=check_msg(conn_msg)
 			if cflag == 1 :
-				 print('joining')
-				 self.roomname,self.clientname = join(conn_msg,csock)
+				 self.roomname,self.clientname,self.roomID = join(conn_msg,csock)
 			elif cflag == 2 : leave(conn_msg,csock)
-			elif cflag == 3 : discon(csock)
-			elif cflag == 4 : chat()
-			else : pass					 #error code for incorrect message	
-			print(self.clientname)
+			elif cflag == 3 : return(0)
+			elif cflag == 4 : chat(conn_msg,csock)
+			elif cflag == 5 : response(conn_msg,csock)
+			else : print('Error code - please wait.')					 #error code for incorrect message	
 			self.chatroom.append(self.roomname)
-			print('roomnames')
-			print(self.chatroom)
+			print('Clients in group g1:')
+			print(len(g1_clients))
+			print('Clients in group g2:')
+			print(len(g2_clients))
 
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

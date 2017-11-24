@@ -1,7 +1,7 @@
 #ChatServer_socketprogramming
 
 
-import socket
+import socket,os,sys
 from threading import Thread,Lock
 import random
 
@@ -17,9 +17,13 @@ def check_msg(msg):
 	elif (msg.find('DISCONNECT'.encode('utf-8'))+1):
 		return(3)
 	elif (msg.find('CHAT:'.encode('utf-8'))+1):
-		return(4)	
-	else:
+		return(4)
+	elif (msg.find('KILL_SERVICE'.encode('utf-8'))+1):
+		os.exit(1)
+	elif (msg.find('HELLO'.encode('utf-8'))+1):
 		return(5)
+	else:
+		return(6)
 
 def join(conn_msg,csock):
 	Lock_thread.acquire()
@@ -32,11 +36,12 @@ def join(conn_msg,csock):
 	clientname = conn_msg[cname:cname_end]
 	rID = 0
 	
-	if (groupname.decode('utf-8')) == 'g1' :
-		g1_clients.append(clientname)
+	if (groupname.decode('utf-8')) == 'room1' :
+		print('g1')
+		g1_clients.append(c1Thread.socket)
 		rID = 1001
-	elif groupname == 'g2' :
-		g2_clients.append(clientname)
+	elif groupname == 'room2' :
+		g2_clients.append(c1Thread.socket)
 		rID = 1002
 	#sending ackowledgement
 	response = "JOINED_CHATROOM: ".encode('utf-8') + groupname+ "\n".encode('utf-8')
@@ -70,7 +75,7 @@ def leave(conn_msg,csock):
 		i=g2_clients.index(c1Thread.text)
 		del g2_clients[i]
 		for x in g2_clients:
-			(g2_clients[x].send(chat_text)
+			g2_clients[x].send(chat_text)
 	csock.send(response)
 	Lock_thread.release()
 
@@ -98,7 +103,7 @@ def chat(conn_msg,csock):       #msg_CHAT
 			(g2_clients[x].socket).send(chat_text)
 	Lock_thread.release()
 
-def response(msg,socket)
+def reply(msg,socket)
 	msgstart=msg.find('HELLO:'.encode('utf-8'))+5
 	msgend=msg.find('\n'.encode('utf-8'),msgstart)
 	chatmsg=msg[msgstart:msgend]
